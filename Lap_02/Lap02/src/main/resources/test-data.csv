@@ -1,0 +1,9 @@
+username,password,email,expected
+jo,Password@123,jo@mail.com,false
+john123,Password@123,johnexample.com,false
+john123,password@123,john@mail.com,false
+john123,PASSWORD@123,john@mail.com,false
+john123,Password123,john@mail.com,false
+alice,short@1,alice@mail.com,false
+ ,Password@123,john@mail.com,false
+bob123,Password123@,huy@gmail.com,true
