@@ -1,0 +1,13 @@
+package huyde180519.lab_03;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class Lab03ApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}
