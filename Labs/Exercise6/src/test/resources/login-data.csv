@@ -1,0 +1,5 @@
+username,password,expected
+phanhuy,1234567,success
+invalidUser,wrongPass,error
+admin,12345,error
+test@test.com,Password123!,error

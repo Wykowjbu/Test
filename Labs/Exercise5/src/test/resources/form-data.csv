@@ -1,0 +1,7 @@
+firstName,lastName,email,gender,mobile,expectedResult
+Huy,Nguyen,huy@test.com,Male,0123456789,success
+An,Tran,an@test.com,Female,0987654321,success
+Binh,Le,binh@test.com,Other,0111222333,success
+,,, Male,0123456789,fail
+Test,User,test@test.com,Male,123,fail
+Test,User,invalid-email,Female,0123456789,fail
