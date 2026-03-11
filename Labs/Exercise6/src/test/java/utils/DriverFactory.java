@@ -13,7 +13,8 @@ public class DriverFactory {
 
     public static WebDriver getDriver() {
         if (driver == null) {
-            WebDriverManager.chromedriver().setup();
+            // Force ChromeDriver version to match installed Chrome/Chromium (142)
+            WebDriverManager.chromedriver().browserVersion("142").setup();
 
             ChromeOptions options = new ChromeOptions();
             options.addArguments("--incognito");

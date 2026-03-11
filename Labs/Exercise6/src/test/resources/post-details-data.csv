@@ -1,0 +1,3 @@
+action,data,expected
+like,,success
+comment,This is a test comment from CSV,success
