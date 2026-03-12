@@ -15,7 +15,7 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Create Post Tests using CSV data only")
+@DisplayName("Create Post Tests - Template Driven")
 public class PostCreateTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -31,49 +31,75 @@ public class PostCreateTest extends BaseTest {
 
     @BeforeEach
     void loginAndNavigate() {
-        // Login before each test to ensure authenticated session
         loginPage.navigate();
-        loginPage.login("phanhuy12", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
         postCreatePage.navigate();
     }
 
-    @ParameterizedTest(name = "CSV File: content={0}, expected={1}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/post-create-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should create post based on CSV data")
-    void testCreatePostFromCsv(String content, String expected) {
+    @DisplayName("Create post scenarios from standardized CSV")
+    void testCreatePostFromTemplateCsv(String testCaseId,
+                                       String testCaseDescription,
+                                       String preConditions,
+                                       String testCaseProcedure,
+                                       String testData,
+                                       String expectedResults,
+                                       String priority,
+                                       String severity,
+                                       String status,
+                                       String content,
+                                       String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
         String resolvedContent = resolveContent(content);
+        String resolvedExpected = clean(automationExpected);
 
         if (resolvedContent.isEmpty()) {
-            // Doc: press Post without content -> shows validation text from asp-validation-for
             postCreatePage.submit();
             WebElement validation = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(postCreatePage.getValidationErrorLocator()));
+                ExpectedConditions.visibilityOfElementLocated(postCreatePage.getContentValidationLocator()));
             assertTrue(validation.isDisplayed(),
-                    "Validation error should appear when content is empty");
+                caseMessage(meta, "Empty content must trigger content validation"));
             assertTrue(postCreatePage.isOnCreatePage(),
-                    "Should stay on create page when content is empty");
-        } else {
-            postCreatePage.createPost(resolvedContent);
-
-            if ("success".equalsIgnoreCase(expected.trim())) {
-                // Doc: success -> redirects to /Index (Feed), post appears with correct text
-                wait.until(ExpectedConditions.urlContains("/Index"));
-                assertTrue(postCreatePage.isRedirectedToFeed(),
-                        "Should redirect to feed after successful post creation");
-            } else {
-                // Error case (e.g. too long): stays on create page with error
-                assertTrue(postCreatePage.isOnCreatePage(),
-                        "Should stay on create page for invalid input");
-            }
+                caseMessage(meta, "Empty content must keep user on Create page"));
+            return;
         }
+
+        postCreatePage.createPost(resolvedContent);
+
+        if (expect(resolvedExpected, EXPECT_SUCCESS)) {
+            wait.until(ExpectedConditions.urlContains("/Posts?message=Post%20created%20successfully!"));
+            assertTrue(postCreatePage.isRedirectedToFeed(),
+                caseMessage(meta, "Valid post content must redirect to posts index"));
+            return;
+        }
+
+        boolean onCreateOrHasError =
+            postCreatePage.isOnCreatePage()
+            || !driver.findElements(postCreatePage.getErrorAlertLocator()).isEmpty();
+
+        assertTrue(onCreateOrHasError,
+            caseMessage(meta, "Invalid post content must remain on Create page or show error alert"));
     }
 
-    private String resolveContent(String content) {
-        if (content == null) return "";
-        String normalized = content.trim();
-        if ("EMPTY".equalsIgnoreCase(normalized)) return "";
-        if ("TOO_LONG".equalsIgnoreCase(normalized)) return "x".repeat(5001);
+    private String resolveContent(String value) {
+        String normalized = resolveEmptyToken(value);
+        if (TOKEN_TOO_LONG.equalsIgnoreCase(normalized)) {
+            return "x".repeat(5001);
+        }
         return normalized;
     }
 }

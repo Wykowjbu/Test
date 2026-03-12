@@ -3,42 +3,62 @@ package pages;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
+/**
+ * PostDeletePage: Page Object cho trang Xóa bài viết (/Posts/Delete/{id}).
+ * Locators từ test_document Phần 1.7.
+ * Yêu cầu đăng nhập & là chủ bài viết.
+ */
 public class PostDeletePage extends BasePage {
 
-    // Locators matching Delete.cshtml
-    private final By confirmDeleteButton = By.xpath("//button[@type='submit' and contains(., 'Yes, Delete This Post')]");
-    private final By cancelButton = By.xpath("//a[contains(@href, '/Posts/Index')]");
-    private final By warningAlert = By.cssSelector(".alert-warning");
-    private final By postContentPreview = By.cssSelector(".post-content");
+    // ===== LOCATORS từ test_document Phần 1.7 =====
+
+    // Nút xác nhận xóa — doc: css=button[type='submit'].btn-danger
+    // Expected text: "Yes, Delete This Post"
+    private final By confirmDeleteButton = By.cssSelector("button[type='submit'].btn-danger");
+
+    // Link Cancel — doc: css=a[href*='/Posts/Index']
+    private final By cancelLink          = By.cssSelector("a[href*='/Posts/Index']");
+
+    // Alert cảnh báo trên trang Delete — doc: css=div.alert.alert-warning
+    private final By warningAlert        = By.cssSelector("div.alert.alert-warning");
 
     public PostDeletePage(WebDriver driver) {
         super(driver);
     }
 
-    // Actions
+    // === ACTIONS ===
+
+    /**
+     * Nhấn nút xóa xác nhận ("Yes, Delete This Post").
+     * Thành công: redirect sang /Posts/Index, bài viết biến khỏi feed.
+     */
     public void confirmDelete() {
         click(confirmDeleteButton);
     }
 
+    /**
+     * Nhấn Cancel để hủy xóa.
+     * Kết quả: redirect sang /Posts/Index, bài viết vẫn tồn tại.
+     */
     public void clickCancel() {
-        click(cancelButton);
+        click(cancelLink);
     }
 
-    // Locator getters
+    // === LOCATOR GETTERS ===
+
+    /** Alert vàng cảnh báo trước khi xóa */
     public By getWarningAlertLocator() {
         return warningAlert;
     }
 
-    // Verifications
+    // === VERIFICATIONS ===
+
+    /** Kiểm tra đang ở trang Delete */
     public boolean isOnDeletePage() {
         return driver.getCurrentUrl().contains("/Posts/Delete");
     }
 
     public boolean isWarningDisplayed() {
         return isElementVisible(warningAlert);
-    }
-
-    public String getPostContentPreview() {
-        return getText(postContentPreview);
     }
 }

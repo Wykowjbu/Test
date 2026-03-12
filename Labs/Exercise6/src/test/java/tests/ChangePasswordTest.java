@@ -15,7 +15,7 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Change Password Tests using CSV file only")
+@DisplayName("Change Password Tests - Template Driven")
 public class ChangePasswordTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -32,49 +32,81 @@ public class ChangePasswordTest extends BaseTest {
     @BeforeEach
     void loginFirst() {
         loginPage.navigate();
-        loginPage.login("phanhuy", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: current={0}, new={1}, confirm={2}, expected={3}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/change-password-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should validate change password based on CSV data")
-    void testChangePasswordFromCsv(String currentPassword, String newPassword, String confirmPassword, String expected) {
+    @DisplayName("Change password scenarios from standardized CSV")
+    void testChangePasswordFromTemplateCsv(String testCaseId,
+                                           String testCaseDescription,
+                                           String preConditions,
+                                           String testCaseProcedure,
+                                           String testData,
+                                           String expectedResults,
+                                           String priority,
+                                           String severity,
+                                           String status,
+                                           String currentPassword,
+                                           String newPassword,
+                                           String confirmPassword,
+                                           String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
+        String resolvedCurrentPassword = resolveEmptyToken(currentPassword);
+        String resolvedNewPassword = resolveEmptyToken(newPassword);
+        String resolvedConfirmPassword = resolveEmptyToken(confirmPassword);
+        String resolvedExpected = clean(automationExpected);
+
         changePasswordPage.navigate();
-        changePasswordPage.changePassword(currentPassword, newPassword, confirmPassword);
+        changePasswordPage.changePassword(
+            resolvedCurrentPassword,
+            resolvedNewPassword,
+            resolvedConfirmPassword
+        );
 
-        if ("success".equalsIgnoreCase(expected.trim())) {
-            // Doc: success => <div class="alert alert-success">
+        if (expect(resolvedExpected, EXPECT_SUCCESS)) {
             WebElement success = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getSuccessAlertLocator()));
+                ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getSuccessAlertLocator()));
             assertTrue(success.isDisplayed(),
-                    "Success alert should be displayed for valid password change");
+                caseMessage(meta, "Successful password change must show success alert"));
 
-            // Revert password to keep account stable for next test runs
-            changePasswordPage.changePassword(newPassword, currentPassword, currentPassword);
-            wait.until(ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getSuccessAlertLocator()));
-        } else {
-            // Doc: mismatch -> validation rule error (.text-danger)
-            // Doc: wrong old password -> error alert red (.alert-danger)
-            boolean isWrongOldPassword = !"1234567".equals(currentPassword.trim());
-            boolean isMismatch = !newPassword.equals(confirmPassword);
-
-            if (isWrongOldPassword) {
-                // Wrong current password: server returns .alert-danger
-                WebElement error = wait.until(
-                        ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getErrorAlertLocator()));
-                assertTrue(error.isDisplayed(),
-                        "Error alert should be shown when current password is wrong");
-            } else {
-                // Validation error (mismatch, too short, etc.): .text-danger
-                WebElement validation = wait.until(
-                        ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getValidationErrorLocator()));
-                assertTrue(validation.isDisplayed(),
-                        "Validation error should be shown for invalid password input");
+            if (!resolvedNewPassword.isEmpty() && !resolvedNewPassword.equals(DEFAULT_PASSWORD)) {
+                changePasswordPage.changePassword(resolvedNewPassword, DEFAULT_PASSWORD, DEFAULT_PASSWORD);
+                wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    changePasswordPage.getSuccessAlertLocator()));
             }
-
-            assertTrue(changePasswordPage.isOnChangePasswordPage(),
-                    "User should stay on change password page on error");
+            return;
         }
+
+        boolean isWrongCurrentPassword = !DEFAULT_PASSWORD.equals(resolvedCurrentPassword);
+        if (isWrongCurrentPassword) {
+            WebElement error = wait.until(
+                ExpectedConditions.visibilityOfElementLocated(changePasswordPage.getErrorAlertLocator()));
+            assertTrue(error.isDisplayed(),
+                caseMessage(meta, "Wrong current password must show server-side error alert"));
+        } else {
+            boolean hasValidationError = wait.until(webDriver ->
+                !webDriver.findElements(changePasswordPage.getConfirmPasswordValidationLocator()).isEmpty()
+                || !webDriver.findElements(changePasswordPage.getNewPasswordValidationLocator()).isEmpty()
+            );
+            assertTrue(hasValidationError,
+                caseMessage(meta, "Invalid new/confirm password must show validation error"));
+        }
+
+        assertTrue(changePasswordPage.isOnChangePasswordPage(),
+            caseMessage(meta, "Failure scenario must remain on Change Password page"));
     }
 }

@@ -12,9 +12,11 @@ import pages.UserProfilePage;
 
 import java.time.Duration;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@DisplayName("User Profile & Follow Tests using CSV file only")
+@DisplayName("User Profile Follow Tests - Template Driven")
 public class UserProfileTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -31,32 +33,65 @@ public class UserProfileTest extends BaseTest {
     @BeforeEach
     void loginFirst() {
         loginPage.navigate();
-        loginPage.login("phanhuy", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: targetUser={0}, action={1}, expected={2}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/user-profile-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should follow/unfollow user based on CSV data")
-    void testUserProfileFromCsv(String targetUser, String action, String expected) {
-        // Navigate to target user's profile
-        userProfilePage.navigate(targetUser.trim());
+    @DisplayName("Follow and unfollow scenarios from standardized CSV")
+    void testUserProfileFromTemplateCsv(String testCaseId,
+                                        String testCaseDescription,
+                                        String preConditions,
+                                        String testCaseProcedure,
+                                        String testData,
+                                        String expectedResults,
+                                        String priority,
+                                        String severity,
+                                        String status,
+                                        String targetUser,
+                                        String action,
+                                        String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
+        String targetUsername = clean(targetUser);
+        String actionValue = clean(action);
+        String expectedValue = clean(automationExpected);
+
+        userProfilePage.navigate(targetUsername);
         assertTrue(userProfilePage.isOnUserProfilePage(),
-                "Should be on user profile page");
+            caseMessage(meta, "Must navigate to target user profile page"));
 
-        if ("follow".equalsIgnoreCase(action.trim())) {
-            // Doc: click Follow -> button changes to "Following", Following count increases
+        if (!"follow".equalsIgnoreCase(actionValue)) {
+            fail(caseMessage(meta, "Unsupported action: " + actionValue));
+            return;
+        }
+
+        if (expect(expectedValue, EXPECT_SUCCESS)) {
+            assertTrue(userProfilePage.isFollowButtonPresent(),
+                caseMessage(meta, "Follow button must be visible for follow action"));
+
             userProfilePage.clickFollowToggle();
-
-            // Wait for page reload
             wait.until(ExpectedConditions.urlContains("/Users/Profile"));
 
-            if ("success".equalsIgnoreCase(expected.trim())) {
-                // After toggling, the button state should have changed
-                String buttonText = userProfilePage.getFollowButtonText();
-                assertTrue(buttonText.contains("Follow"),
-                        "Follow button should be visible after toggle action");
-            }
+            String buttonText = userProfilePage.getFollowButtonText().toLowerCase();
+            assertTrue(buttonText.contains("follow"),
+                caseMessage(meta, "Follow button label must be Follow/Following after toggle"));
+            return;
         }
+
+        assertFalse(userProfilePage.isFollowButtonPresent(),
+            caseMessage(meta, "Self-follow scenario must not display follow button"));
     }
 }

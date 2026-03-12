@@ -1,3 +1,4 @@
-seedContent,editedContent,expected
-Seed post for csv edit,Edited content from csv,success
-Seed post invalid edit,EMPTY,error
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,seed_content,edited_content,automation_expected
+TC_PST_010,Edit post with valid content,User is logged in and owns a post,Create seed post then edit with valid content,seed valid edited valid,Updated content appears in posts list,High,High,Pass,Seed post for csv edit,Edited content from csv,success
+TC_PST_011,Reject empty edited content,User is logged in and owns a post,Create seed post then submit empty edited content,seed valid edited EMPTY,Stay on edit page and show validation,High,High,Pass,Seed post invalid edit,EMPTY,error
+TC_PST_012,Reject too long edited content,User is logged in and owns a post,Create seed post then submit too long edited content,seed valid edited TOO_LONG,Stay on edit page or show error,Medium,High,Pass,Seed post too long edit,TOO_LONG,error

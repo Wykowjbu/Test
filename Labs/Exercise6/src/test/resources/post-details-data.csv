@@ -1,3 +1,3 @@
-action,data,expected
-like,,success
-comment,This is a test comment from CSV,success
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,action,data,automation_expected
+TC_INT_001,Like post from details page,User is logged in and details page is accessible,Create post open details and click like,action like,Like action updates state on details page,Critical,Critical,Pass,like,NA,success
+TC_INT_004,Add valid comment from details page,User is logged in and details page is accessible,Create post open details and submit comment,action comment with valid text,Comment appears on details page,Critical,Critical,Pass,comment,This is a test comment from CSV,success

@@ -1,3 +1,3 @@
-username,email,fullName,bio,dateOfBirth,expected
-KEEP,KEEP,CSV Profile Name,Profile updated from csv,01/01/1999,success
-KEEP,invalid-email,CSV Profile Name Invalid,Invalid email profile case,02/02/1999,error
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,username,email,full_name,bio,date_of_birth,automation_expected
+TC_UM_020,Update profile with valid data,User is logged in and on profile page,Submit profile update with valid editable fields,username KEEP email KEEP full_name valid bio valid date valid,Show success alert on profile,Medium,Medium,Pass,KEEP,KEEP,CSV Profile Name,Profile updated from csv,1999-01-01,success
+TC_UM_021,Reject invalid profile email,User is logged in and on profile page,Submit profile update with invalid email,username KEEP email invalid-email,Show validation error on profile,Medium,Medium,Pass,KEEP,invalid-email,CSV Invalid Email,Invalid email profile case,1999-02-02,error

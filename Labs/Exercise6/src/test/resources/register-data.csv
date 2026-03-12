@@ -1,7 +1,7 @@
-username,email,fullName,password,confirmPassword,expected
-newuser,newuser@example.com,New User,StrongP@ss1!,StrongP@ss1!,success
-,test@email.com,Test User,Pass123!,Pass123!,error
-testuser2,,Test User,Pass123!,Pass123!,error
-testuser3,test3@email.com,Test User,123,123,error
-testuser4,test4@email.com,Test User,StrongP@ss1!,Mismatch!,error
-testuser5,invalidemail,Test User,StrongP@ss1!,StrongP@ss1!,error
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,username,email,full_name,password,confirm_password,automation_expected
+TC_REG_001,Register successfully with valid data,Register page is accessible,Open register and submit valid unique data,valid username email password and confirm,Redirect to login with success alert,Critical,Critical,Pass,newuser,newuser@example.com,New User,StrongP@ss1!,StrongP@ss1!,success
+TC_REG_002,Reject empty username,Register page is accessible,Submit form with empty username,username EMPTY email valid,Stay on register and show required validation,High,Critical,Pass,EMPTY,test2@example.com,Test User,StrongP@ss1!,StrongP@ss1!,error
+TC_REG_003,Reject empty email,Register page is accessible,Submit form with empty email,username valid email EMPTY,Stay on register and show required validation,High,Critical,Pass,testuser2,EMPTY,Test User,StrongP@ss1!,StrongP@ss1!,error
+TC_REG_004,Reject invalid email format,Register page is accessible,Submit form with invalid email value,username valid email invalidemail,Show email validation message,High,High,Pass,testuser3,invalidemail,Test User,StrongP@ss1!,StrongP@ss1!,error
+TC_REG_005,Reject weak password,Register page is accessible,Submit form with weak password,valid username email short password,Show password validation message,High,High,Pass,testuser4,testuser4@example.com,Test User,short,short,error
+TC_REG_006,Reject confirm password mismatch,Register page is accessible,Submit form with mismatch confirm,valid username email mismatched confirm,Show confirm password validation message,High,High,Pass,testuser5,testuser5@example.com,Test User,StrongP@ss1!,Mismatch!,error

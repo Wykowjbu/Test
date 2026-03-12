@@ -1,2 +1,3 @@
-targetUser,action,expected
-admin,follow,success
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,target_user,action,automation_expected
+TC_CON_001,Follow another user from profile page,User is logged in and target profile exists,Open another user profile and click follow,target user admin action follow,Follow toggle works and button text updates,Critical,Critical,Pass,admin,follow,success
+TC_CON_002,Cannot follow own profile,User is logged in,Open own profile and verify follow is unavailable,target user phanhuy12 action follow,Follow button is hidden for self profile,High,High,Pass,phanhuy12,follow,error

@@ -1,4 +1,4 @@
-content,expected
-Hello from CSV post test,success
-EMPTY,error
-TOO_LONG,error
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,content,automation_expected
+TC_PST_001,Create post with valid content,User is logged in,Open create post and submit valid text,content Hello from CSV post test,Redirect to posts index and show new post,Critical,Critical,Pass,Hello from CSV post test,success
+TC_PST_002,Reject empty post content,User is logged in,Open create post and submit empty content,content EMPTY,Stay on create page and show content required,High,Critical,Pass,EMPTY,error
+TC_PST_003,Reject post content above max length,User is logged in,Open create post and submit too long content,content TOO_LONG,Stay on create page or show server error,High,High,Pass,TOO_LONG,error

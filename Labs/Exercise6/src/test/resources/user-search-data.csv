@@ -1,3 +1,3 @@
-query,expected
-phanhuy,found
-zzzz_not_found_user_123,empty
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,query,automation_expected
+TC_CON_010,Find users with matching keyword,User is logged in and search page is accessible,Open search and query existing username,query phanhuy,At least one user card is displayed,Medium,Medium,Pass,phanhuy,found
+TC_CON_011,Handle query with no matches,User is logged in and search page is accessible,Open search and query non existing keyword,query zzzz_not_found_user_123,Show no users found message,Medium,Low,Pass,zzzz_not_found_user_123,empty

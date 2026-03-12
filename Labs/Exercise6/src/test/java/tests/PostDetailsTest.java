@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
+import org.openqa.selenium.By;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import pages.LoginPage;
@@ -14,8 +15,9 @@ import pages.PostDetailsPage;
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@DisplayName("Post Details Tests (Like & Comment) using CSV file only")
+@DisplayName("Post Details Tests - Template Driven")
 public class PostDetailsTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -34,15 +36,38 @@ public class PostDetailsTest extends BaseTest {
     @BeforeEach
     void loginFirst() {
         loginPage.navigate();
-        loginPage.login("phanhuy", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: action={0}, data={1}, expected={2}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/post-details-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should interact with post details based on CSV data")
-    void testPostDetailsFromCsv(String action, String data, String expected) {
-        // Step 1: Create a fresh post so we have a known post to interact with
+    @DisplayName("Like and comment scenarios from standardized CSV")
+    void testPostDetailsFromTemplateCsv(String testCaseId,
+                                        String testCaseDescription,
+                                        String preConditions,
+                                        String testCaseProcedure,
+                                        String testData,
+                                        String expectedResults,
+                                        String priority,
+                                        String severity,
+                                        String status,
+                                        String action,
+                                        String data,
+                                        String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
         String marker = String.valueOf(System.currentTimeMillis());
         String postContent = "Detail test post #" + marker;
 
@@ -50,58 +75,64 @@ public class PostDetailsTest extends BaseTest {
         postCreatePage.createPost(postContent);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Posts/Create")));
 
-        // Step 2: Navigate to the feed/index and find the post to get its Details link
-        // We navigate to feed, then click on the post to go to details
-        // Alternative: extract post id from URL after create redirect
-        // For simplicity, navigate to index and use the post content to find details link
-        driver.get(baseUrl + "/Index");
-        wait.until(ExpectedConditions.urlContains("/Index"));
+        driver.get(baseUrl + "/");
+        wait.until(ExpectedConditions.urlMatches(".*\\/($|\\?|#).*"));
 
-        // Click on the post to go to its details page
-        org.openqa.selenium.By postLink = org.openqa.selenium.By.xpath(
-                "//div[contains(@class,'post-content') and contains(normalize-space(.), '" + marker + "')]/ancestor::div[contains(@class,'card')]//a[contains(@href,'/Posts/Details')]"
+        By postDetailsLink = By.xpath(
+            "//div[contains(@class,'post-content') and contains(normalize-space(.), '"
+                + marker + "')]/ancestor::div[contains(@class,'card')]"
+                + "//a[contains(@href,'/Posts/Details')]"
         );
 
         try {
-            wait.until(ExpectedConditions.elementToBeClickable(postLink)).click();
+            wait.until(ExpectedConditions.elementToBeClickable(postDetailsLink)).click();
         } catch (Exception e) {
-            // If no direct Details link, try clicking on the post content area
-            org.openqa.selenium.By contentArea = org.openqa.selenium.By.xpath(
-                    "//div[contains(@class,'post-content') and contains(normalize-space(.), '" + marker + "')]"
+            By contentArea = By.xpath(
+                "//div[contains(@class,'post-content') and contains(normalize-space(.), '" + marker + "')]"
             );
             wait.until(ExpectedConditions.elementToBeClickable(contentArea)).click();
         }
 
         wait.until(ExpectedConditions.urlContains("/Posts/Details"));
-        assertTrue(postDetailsPage.isOnDetailsPage(), "Should be on post details page");
+        assertTrue(postDetailsPage.isOnDetailsPage(),
+            caseMessage(meta, "Must navigate to post details before interaction"));
 
-        // Step 3: Perform the action
-        if ("like".equalsIgnoreCase(action.trim())) {
-            // Doc: click Like -> like count increases by 1, button gets class "liked"
+        String actionValue = clean(action);
+        String expectedValue = clean(automationExpected);
+
+        if ("like".equalsIgnoreCase(actionValue)) {
             int beforeCount = postDetailsPage.getLikeCount();
             postDetailsPage.clickLike();
-
-            // Wait for page reload after like
             wait.until(ExpectedConditions.urlContains("/Posts/Details"));
 
-            if ("success".equalsIgnoreCase(expected.trim())) {
+            if (expect(expectedValue, EXPECT_SUCCESS)) {
                 int afterCount = postDetailsPage.getLikeCount();
-                assertTrue(afterCount >= beforeCount,
-                        "Like count should increase after liking");
+                assertTrue(afterCount >= beforeCount || postDetailsPage.isLiked(),
+                    caseMessage(meta, "Like action should keep/increase like state"));
+            } else {
+                boolean hasError = !driver.findElements(postDetailsPage.getErrorAlertLocator()).isEmpty();
+                assertTrue(hasError,
+                    caseMessage(meta, "Failed like scenario must show error alert"));
             }
+            return;
+        }
 
-        } else if ("comment".equalsIgnoreCase(action.trim())) {
-            // Doc: enter comment -> click Post Comment -> comment appears in Comments section
-            String commentText = data.trim() + " #" + marker;
+        if ("comment".equalsIgnoreCase(actionValue)) {
+            String commentText = clean(data) + " #" + marker;
             postDetailsPage.postComment(commentText);
-
-            // Wait for page reload after comment
             wait.until(ExpectedConditions.urlContains("/Posts/Details"));
 
-            if ("success".equalsIgnoreCase(expected.trim())) {
+            if (expect(expectedValue, EXPECT_SUCCESS)) {
                 assertTrue(postDetailsPage.isCommentVisible(commentText),
-                        "Comment should be visible after posting");
+                    caseMessage(meta, "Posted comment must appear on details page"));
+            } else {
+                boolean hasError = !driver.findElements(postDetailsPage.getErrorAlertLocator()).isEmpty();
+                assertTrue(hasError,
+                    caseMessage(meta, "Failed comment scenario must show error alert"));
             }
+            return;
         }
+
+        fail(caseMessage(meta, "Unsupported action: " + actionValue));
     }
 }

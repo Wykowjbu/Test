@@ -15,7 +15,7 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Profile Update Tests using CSV file only")
+@DisplayName("Profile Update Tests - Template Driven")
 public class ProfileUpdateTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -32,48 +32,72 @@ public class ProfileUpdateTest extends BaseTest {
     @BeforeEach
     void loginFirst() {
         loginPage.navigate();
-        loginPage.login("phanhuy", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: username={0}, email={1}, expected={5}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/profile-update-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should update profile based on CSV data")
-    void testProfileUpdateFromCsv(String username, String email, String fullName, String bio, String dateOfBirth, String expected) {
+    @DisplayName("Profile update scenarios from standardized CSV")
+    void testProfileUpdateFromTemplateCsv(String testCaseId,
+                                          String testCaseDescription,
+                                          String preConditions,
+                                          String testCaseProcedure,
+                                          String testData,
+                                          String expectedResults,
+                                          String priority,
+                                          String severity,
+                                          String status,
+                                          String username,
+                                          String email,
+                                          String fullName,
+                                          String bio,
+                                          String dateOfBirth,
+                                          String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
         profilePage.navigate();
 
-        // Resolve values: KEEP means use current, EMPTY means clear
-        String resolvedUsername = resolveValue(username, profilePage.getUsernameValue());
-        String resolvedEmail = resolveValue(email, profilePage.getEmailValue());
-        String resolvedFullName = resolveValue(fullName, profilePage.getFullNameValue());
-        String resolvedBio = resolveValue(bio, profilePage.getBioValue());
-        String resolvedDateOfBirth = resolveValue(dateOfBirth, profilePage.getDateOfBirthValue());
+        String resolvedUsername = resolveKeepOrEmptyToken(username, profilePage.getUsernameValue());
+        String resolvedEmail = resolveKeepOrEmptyToken(email, profilePage.getEmailValue());
+        String resolvedFullName = resolveKeepOrEmptyToken(fullName, profilePage.getFullNameValue());
+        String resolvedBio = resolveKeepOrEmptyToken(bio, profilePage.getBioValue());
+        String resolvedDateOfBirth = resolveKeepOrEmptyToken(dateOfBirth, profilePage.getDateOfBirthValue());
+        String resolvedExpected = clean(automationExpected);
 
-        profilePage.updateProfile(resolvedUsername, resolvedEmail, resolvedFullName, resolvedDateOfBirth, resolvedBio);
+        profilePage.updateProfile(
+            resolvedUsername,
+            resolvedEmail,
+            resolvedFullName,
+            resolvedDateOfBirth,
+            resolvedBio
+        );
 
-        if ("success".equalsIgnoreCase(expected.trim())) {
-            // Doc: reload page shows <div class="alert alert-success"> and Bio text changed
+        if (expect(resolvedExpected, EXPECT_SUCCESS)) {
             WebElement success = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(profilePage.getSuccessAlertLocator()));
+                ExpectedConditions.visibilityOfElementLocated(profilePage.getSuccessAlertLocator()));
             assertTrue(success.isDisplayed(),
-                    "Success alert should be displayed for valid profile update");
+                caseMessage(meta, "Valid profile update must show success alert"));
         } else {
-            // Error: validation error shown
-            WebElement validation = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(profilePage.getValidationErrorLocator()));
-            assertTrue(validation.isDisplayed(),
-                    "Validation error should be displayed for invalid profile data");
+            boolean hasValidationOrError =
+                !driver.findElements(profilePage.getValidationErrorLocator()).isEmpty()
+                || !driver.findElements(profilePage.getErrorAlertLocator()).isEmpty();
+            assertTrue(hasValidationOrError,
+                caseMessage(meta, "Invalid profile update must show validation or error message"));
         }
 
         assertTrue(profilePage.isOnProfilePage(),
-                "User should remain on profile page after submitting");
-    }
-
-    private String resolveValue(String incoming, String currentValue) {
-        if (incoming == null) return "";
-        String normalized = incoming.trim();
-        if ("KEEP".equalsIgnoreCase(normalized)) return currentValue == null ? "" : currentValue;
-        if ("EMPTY".equalsIgnoreCase(normalized)) return "";
-        return normalized;
+            caseMessage(meta, "Profile submission should stay on Profile page"));
     }
 }

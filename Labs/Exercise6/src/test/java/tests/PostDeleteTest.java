@@ -16,8 +16,9 @@ import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@DisplayName("Post Delete Tests using CSV file only")
+@DisplayName("Post Delete Tests - Template Driven")
 public class PostDeleteTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -38,45 +39,75 @@ public class PostDeleteTest extends BaseTest {
     @BeforeEach
     void loginAndSetup() {
         loginPage.navigate();
-        loginPage.login("phanhuy12", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: content={0}, expected={1}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/post-delete-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should delete post based on CSV data")
-    void testPostDeleteFromCsv(String content, String expected) {
-        // Create a unique post to delete
+    @DisplayName("Delete post scenarios from standardized CSV")
+    void testPostDeleteFromTemplateCsv(String testCaseId,
+                                       String testCaseDescription,
+                                       String preConditions,
+                                       String testCaseProcedure,
+                                       String testData,
+                                       String expectedResults,
+                                       String priority,
+                                       String severity,
+                                       String status,
+                                       String content,
+                                       String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
         String marker = String.valueOf(System.currentTimeMillis());
-        String postContent = content.trim() + " #" + marker;
+        String postContent = clean(content) + " #" + marker;
+        String resolvedExpected = clean(automationExpected);
 
         postCreatePage.navigate();
         postCreatePage.createPost(postContent);
         wait.until(ExpectedConditions.urlContains("/Posts"));
 
-        // Navigate to My Posts and verify post exists
         myPostsPage.navigate();
         assertTrue(myPostsPage.containsPostContent(postContent),
-                "Created post should be present before delete");
+            caseMessage(meta, "Seed post must exist before delete workflow starts"));
 
-        // Click delete on the specific post
         myPostsPage.clickDeleteByContent(postContent);
         assertTrue(postDeletePage.isOnDeletePage(),
-                "Should navigate to delete confirmation page");
+            caseMessage(meta, "Must navigate to Delete confirmation page"));
+        assertTrue(postDeletePage.isWarningDisplayed(),
+            caseMessage(meta, "Warning alert must be visible on Delete confirmation page"));
 
-        // Confirm deletion
-        postDeletePage.confirmDelete();
-        wait.until(ExpectedConditions.urlContains("/Posts"));
+        if (expect(resolvedExpected, EXPECT_SUCCESS)) {
+            postDeletePage.confirmDelete();
+            wait.until(ExpectedConditions.urlContains("/Posts"));
 
-        // Reload My Posts page to verify deletion result
-        myPostsPage.navigate();
-
-        if ("success".equalsIgnoreCase(expected.trim())) {
+            myPostsPage.navigate();
             assertFalse(myPostsPage.containsPostContent(postContent),
-                    "Deleted post should no longer appear in list");
-        } else {
-            assertTrue(myPostsPage.containsPostContent(postContent),
-                    "Post should remain when delete is not successful");
+                caseMessage(meta, "Deleted post must not appear in posts list"));
+            return;
         }
+
+        if (expect(resolvedExpected, EXPECT_CANCEL)) {
+            postDeletePage.clickCancel();
+            wait.until(ExpectedConditions.urlContains("/Posts"));
+
+            myPostsPage.navigate();
+            assertTrue(myPostsPage.containsPostContent(postContent),
+                caseMessage(meta, "Cancelled delete must keep post in posts list"));
+            return;
+        }
+
+        fail(caseMessage(meta, "Unsupported automation_expected value: " + resolvedExpected));
     }
 }

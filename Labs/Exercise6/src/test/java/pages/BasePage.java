@@ -9,6 +9,11 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 
+/**
+ * BasePage: Lớp cha cho tất cả Page Objects.
+ * Cung cấp các hàm tiện ích (click, type, wait) dùng chung
+ * để tránh lặp code và tăng tính ổn định (không dùng Thread.sleep).
+ */
 public class BasePage {
 
     protected WebDriver driver;
@@ -16,7 +21,7 @@ public class BasePage {
 
     public BasePage(WebDriver driver) {
         this.driver = driver;
-        // Explicit wait initialized for 10 seconds
+        // Explicit wait 10 giây — áp dụng cho tất cả thao tác chờ element
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
 
@@ -46,6 +51,10 @@ public class BasePage {
         return waitForVisibility(locator).getText();
     }
 
+    /**
+     * Kiểm tra element có hiển thị không.
+     * Trả về false thay vì throw exception nếu không tìm thấy.
+     */
     protected boolean isElementVisible(By locator) {
         try {
             return waitForVisibility(locator).isDisplayed();
@@ -54,9 +63,21 @@ public class BasePage {
         }
     }
 
-    // Reusable utility method
+    /**
+     * Cuộn trang đến element — dùng trước khi click nếu element bị che khuất.
+     */
     protected void scrollToElement(By locator) {
         WebElement element = driver.findElement(locator);
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", element);
+    }
+
+    /**
+     * Lấy locator cho span validation của từng field cụ thể.
+     * ASP.NET Razor Pages render: asp-validation-for="Input.FieldName"
+     * → <span data-valmsg-for="Input.FieldName">
+     * Dùng để kiểm tra thông báo lỗi client-side của từng field.
+     */
+    protected By fieldValidationLocator(String fieldName) {
+        return By.cssSelector("span[data-valmsg-for='" + fieldName + "']");
     }
 }

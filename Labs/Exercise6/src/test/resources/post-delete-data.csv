@@ -1,2 +1,3 @@
-content,expected
-Post for csv delete flow,success
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,content,automation_expected
+TC_SEC_001,Delete own post successfully,User is logged in and owns a post,Create post then confirm delete,content Post for csv delete flow,Deleted post no longer appears in list,High,High,Pass,Post for csv delete flow,success
+TC_SEC_002,Cancel delete should keep post,User is logged in and owns a post,Create post then cancel delete,content Post cancel delete test,Post remains in list after cancel,Medium,Medium,Pass,Post cancel delete test,cancel

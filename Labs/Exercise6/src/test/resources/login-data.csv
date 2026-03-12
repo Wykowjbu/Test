@@ -1,5 +1,6 @@
-username,password,expected
-phanhuy12,1234567,success
-invalidUser,wrongPass,error
-admin,12345,error
-test@test.com,Password123!,error
+test_case_id,test_case_description,pre_conditions,test_case_procedure,test_data,expected_results,priority,severity,status,username,password,automation_expected
+TC_LOG_001,Login with valid credentials,Active account exists,Open login page and submit valid credentials,username phanhuy12 password 1234567,Redirect to home feed,Critical,Critical,Pass,phanhuy12,1234567,success
+TC_LOG_002,Reject empty username,Login page is accessible,Open login and submit with empty username,username EMPTY password valid,Stay on login and show required validation,High,Critical,Pass,EMPTY,1234567,error
+TC_LOG_003,Reject empty password,Login page is accessible,Open login and submit with empty password,username valid password EMPTY,Stay on login and show required validation,High,Critical,Pass,phanhuy12,EMPTY,error
+TC_LOG_004,Reject invalid credentials,Login page is accessible,Open login and submit wrong credentials,username invalidUser password wrongPass,Show invalid credential alert,Critical,Critical,Pass,invalidUser,wrongPass,error
+TC_LOG_005,Reject both fields empty,Login page is accessible,Open login and submit with both fields empty,username EMPTY password EMPTY,Stay on login and show required validation,High,Critical,Pass,EMPTY,EMPTY,error

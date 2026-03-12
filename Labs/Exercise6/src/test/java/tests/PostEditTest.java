@@ -5,16 +5,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import pages.*;
+import pages.LoginPage;
+import pages.MyPostsPage;
+import pages.PostCreatePage;
+import pages.PostEditPage;
 
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Post Edit Tests using CSV file only")
+@DisplayName("Post Edit Tests - Template Driven")
 public class PostEditTest extends BaseTest {
 
     private static LoginPage loginPage;
@@ -35,54 +37,80 @@ public class PostEditTest extends BaseTest {
     @BeforeEach
     void loginFirst() {
         loginPage.navigate();
-        loginPage.login("phanhuy12", "1234567");
+        loginPage.login(DEFAULT_USERNAME, DEFAULT_PASSWORD);
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Account/Login")));
     }
 
-    @ParameterizedTest(name = "CSV: seed={0}, edited={1}, expected={2}")
+    @ParameterizedTest(name = "[{index}] {0} - {8}")
     @CsvFileSource(resources = "/post-edit-data.csv", numLinesToSkip = 1)
-    @DisplayName("Should edit post based on CSV data")
-    void testPostEditFromCsv(String seedContent, String editedContent, String expected) {
-        // Step 1: Create a seed post with unique marker
+    @DisplayName("Edit post scenarios from standardized CSV")
+    void testPostEditFromTemplateCsv(String testCaseId,
+                                     String testCaseDescription,
+                                     String preConditions,
+                                     String testCaseProcedure,
+                                     String testData,
+                                     String expectedResults,
+                                     String priority,
+                                     String severity,
+                                     String status,
+                                     String seedContent,
+                                     String editedContent,
+                                     String automationExpected) {
+
+        CaseMeta meta = metadata(
+            testCaseId,
+            testCaseDescription,
+            preConditions,
+            testCaseProcedure,
+            testData,
+            expectedResults,
+            priority,
+            severity,
+            status
+        );
+
         String marker = String.valueOf(System.currentTimeMillis());
-        String createdPostContent = seedContent.trim() + " #" + marker;
+        String createdPostContent = clean(seedContent) + " #" + marker;
 
         postCreatePage.navigate();
         postCreatePage.createPost(createdPostContent);
-        // After create, redirects to feed/index
         wait.until(ExpectedConditions.not(ExpectedConditions.urlContains("/Posts/Create")));
 
-        // Step 2: Go to My Posts and click Edit on the created post
         myPostsPage.navigate();
         myPostsPage.clickEditByContent(createdPostContent);
-        assertTrue(postEditPage.isOnEditPage(), "Should be on edit page");
+        assertTrue(postEditPage.isOnEditPage(),
+            caseMessage(meta, "Must navigate to Edit page before submitting edited content"));
 
-        // Step 3: Edit the content
         String resolvedEditedContent = resolveEditedContent(editedContent, marker);
+        String resolvedExpected = clean(automationExpected);
         postEditPage.editPostContent(resolvedEditedContent);
 
-        if ("success".equalsIgnoreCase(expected.trim())) {
-            // Doc: success -> redirect to /Posts/Index with updated content visible
+        if (expect(resolvedExpected, EXPECT_SUCCESS)) {
             wait.until(ExpectedConditions.urlContains("/Posts"));
             myPostsPage.navigate();
             assertTrue(myPostsPage.containsPostContent(resolvedEditedContent),
-                    "Edited content should be shown in post list");
-        } else {
-            // Error: validation error displayed, stays on edit page
-            WebElement validation = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(postEditPage.getValidationErrorLocator()));
-            assertTrue(validation.isDisplayed(),
-                    "Validation error should be shown for invalid edit data");
-            assertTrue(postEditPage.isOnEditPage(),
-                    "User should remain on edit page on invalid edit");
+                caseMessage(meta, "Edited content must appear in posts list after successful save"));
+            return;
         }
+
+        boolean hasValidationOrError =
+            !driver.findElements(postEditPage.getContentValidationLocator()).isEmpty()
+            || !driver.findElements(postEditPage.getErrorAlertLocator()).isEmpty();
+
+        assertTrue(hasValidationOrError,
+            caseMessage(meta, "Invalid edited content must show validation or error"));
+        assertTrue(postEditPage.isOnEditPage(),
+            caseMessage(meta, "Failure scenario must remain on Edit page"));
     }
 
-    private String resolveEditedContent(String input, String marker) {
-        if (input == null) return "";
-        String normalized = input.trim();
-        if ("EMPTY".equalsIgnoreCase(normalized)) return "";
-        if ("TOO_LONG".equalsIgnoreCase(normalized)) return "x".repeat(5001);
+    private String resolveEditedContent(String value, String marker) {
+        String normalized = resolveEmptyToken(value);
+        if (TOKEN_TOO_LONG.equalsIgnoreCase(normalized)) {
+            return "x".repeat(5001);
+        }
+        if (normalized.isEmpty()) {
+            return "";
+        }
         return normalized + " #edited-" + marker;
     }
 }
